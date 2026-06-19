@@ -1,0 +1,37 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build output
+ncloud-platform/server.exe
+ncloud-platform/standalone.exe
+ncloud-platform/tmp.exe
+ncloud-platform/main.exe
+ncloud-platform/bin/
+ncloud-platform/cmd/standalone/server.exe
+ncloud-platform/cmd/standalone/tmp.exe
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# Local object storage (user-uploaded project zips)
+ncloud-platform/ncloud-s3-bucket/
+
+# Nixpacks build zip
+ncloud-platform/nix.zip
+sample.zip
+
+# Go dependency cache
+vendor/
+
+# OS
+.DS_Store
+Thumbs.db
