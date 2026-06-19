@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZOD | Platform Dashboard</title>
+    <!-- Fonts: preconnect for speed, load non-blocking -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <!-- Xterm.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <style>
+        :root {
+            --bg-base: #000000;
+            --bg-surface: rgba(10, 10, 10, 0.6);
+            --bg-elevated: rgba(20, 20, 20, 0.8);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(255, 255, 255, 0.2);
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --accent-primary: #ffffff;
+            --accent-hover: #e4e4e7;
+            --brand-blue: #0070f3;
+            --brand-purple: #7928ca;
+            --brand-cyan: #50e3c2;
+            --status-success: #10b981;
+            --status-warning: #f59e0b;
+            --status-error: #ef4444;
+            --status-info: #3b82f6;
+            --font-sans: 'Inter', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-base); color: var(--text-primary);
+            font-family: var(--font-sans); -webkit-font-smoothing: antialiased;
+            display: flex; height: 100vh; overflow: hidden;
+            line-height: 1.6;
+            background-image: radial-gradient(circle at 15% 50%, rgba(121, 40, 202, 0.08), transparent 25%), radial-gradient(circle at 85% 30%, rgba(0, 112, 243, 0.08), transparent 25%);
+            background-attachment: fixed;
+        }
+
+        /* Utility */
+        .flex { display: flex; } .flex-col { flex-direction: column; }
+        .items-center { align-items: center; } .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.75rem; } .gap-4 { gap: 1.25rem; }
+        .p-4 { padding: 1rem; } .p-6 { padding: 1.5rem; }
+        .mt-4 { margin-top: 1.5rem; } .mb-4 { margin-bottom: 1.5rem; } .mb-6 { margin-bottom: 2rem; }
+        .w-full { width: 100%; } .h-full { height: 100%; }
+        .hidden { display: none !important; }
+
+        /* Typography */
+        h1 { font-weight: 700; font-size: 1.75rem; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+        h2 { font-weight: 600; font-size: 1.25rem; letter-spacing: -0.01em; margin-bottom: 0.5rem; }
+        h3 { font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; }
+        p { margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6; }
+        
+        .text-sm { font-size: 0.875rem; line-height: 1.5; } 
+        .text-xs { font-size: 0.75rem; line-height: 1.4; }
+        .text-muted { color: var(--text-secondary); }
+        .font-mono { font-family: var(--font-mono); }
+
+        /* Icons */
+        svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* Inputs & Buttons */
+        .input { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); color: white; padding: 0.6rem 0.85rem; border-radius: 6px; font-family: var(--font-sans); font-size: 0.875rem; width: 100%; outline: none; transition: var(--transition-fast); }
+        .input:focus { border-color: var(--brand-blue); background: rgba(0, 112, 243, 0.05); box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2); }
+        .btn { background: #fafafa; color: #000; border: 1px solid transparent; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: var(--transition-fast); display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn:hover { background: #ffffff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
+        .btn:active { transform: translateY(0); }
+        .btn-outline { background: transparent; color: var(--text-primary); border: 1px solid var(--border-subtle); }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); transform: none; box-shadow: none; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--bg-surface); border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column; z-index: 10; }
+        .sidebar-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 14px; }
+        
+        /* ZOD Logo (White) */
+        .logo { width: 32px; height: 32px; background: transparent; display: flex; align-items: center; justify-content: center; }
+        .logo svg { stroke: #ffffff; width: 24px; height: 24px; stroke-width: 1.5; }
+        
+        .brand-text { font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px; color: #ffffff; }
+        
+        .nav-menu { padding: 1rem; flex: 1; overflow-y: auto; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 0.6rem 0.85rem; color: var(--text-secondary); text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: var(--transition-fast); cursor: pointer; font-size: 0.875rem; font-weight: 500; }
+        .nav-item:hover { color: var(--text-primary); background: var(--bg-elevated); }
+        .nav-item.active { color: var(--accent-primary); background: rgba(255,255,255,0.08); }
+        .nav-badge { margin-left: auto; background: rgba(0, 112, 243, 0.2); color: var(--brand-blue); font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+
+        /* Main Content Area */
+        .main-content { flex: 1; display: flex; flex-direction: column; background: transparent; position: relative; }
+        .topbar { height: 76px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; background: rgba(10,10,10,0.95); z-index: 5; }
+        .breadcrumb { display: flex; align-items: center; gap: 12px; font-size: 0.875rem; color: var(--text-secondary); font-weight: 500; }
+        .breadcrumb span.current { color: var(--text-primary); font-weight: 600; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        
+        .view-container { flex: 1; overflow-y: auto; padding: 2rem 3rem; position: relative; max-width: 1600px; margin: 0 auto; width: 100%; }
+        
+        .card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.5rem; transition: var(--transition-fast); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .card:hover { border-color: rgba(255,255,255,0.12); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1); }
+        
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: start; }
+        @media(min-width: 1100px) { .dashboard-grid { grid-template-columns: 350px 1fr; } }
+        .project-card { display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: rgba(255,255,255,0.02); cursor: pointer; transition: var(--transition-fast); margin-bottom: 0.75rem; }
+        .project-card:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); transform: translateY(-1px); }
+        .project-card.active { border-color: rgba(0, 112, 243, 0.5) !important; background: rgba(0, 112, 243, 0.08) !important; box-shadow: 0 0 0 1px rgba(0, 112, 243, 0.3); }
+        
+        .status-indicator { width: 10px; height: 10px; border-radius: 50%; background: var(--status-warning); box-shadow: 0 0 10px var(--status-warning); }
+        .status-indicator.ready { background: var(--status-success); box-shadow: 0 0 10px var(--status-success); }
+        .status-indicator.error { background: var(--status-error); box-shadow: 0 0 10px var(--status-error); }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 2.5rem; border-bottom: 1px solid var(--border-subtle); margin-bottom: 2.5rem; }
+        .tab { padding: 1rem 0; color: var(--text-secondary); font-size: 0.95rem; font-weight: 500; cursor: pointer; position: relative; transition: var(--transition-fast); }
+        .tab:hover { color: var(--text-primary); text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        .tab.active { color: var(--accent-primary); font-weight: 600; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
+        .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent-primary); border-radius: 2px 2px 0 0; box-shadow: 0 0 10px var(--accent-primary); }
+
+        /* Professional Log Console */
+        .log-console { background: #000000; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); font-family: var(--font-mono); font-size: 0.85rem; height: 60vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .log-header { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; background: #111111; border-bottom: 1px solid var(--border-subtle); }
+        .mac-dots { display: flex; gap: 8px; }
+        .mac-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .mac-dot.red { background: #ff5f56; } .mac-dot.yellow { background: #ffbd2e; } .mac-dot.green { background: #27c93f; }
+        
+        .log-body { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; color: #d4d4d8; line-height: 1.6; scroll-behavior: smooth; }
+        .log-line { display: flex; gap: 1.25rem; margin-bottom: 2px; padding: 2px 0; border-radius: 4px; transition: background 0.1s; }
+        .log-line:hover { background: rgba(255,255,255,0.03); }
+        .log-ts { color: #52525b; user-select: none; white-space: nowrap; font-size: 0.75rem; }
+        .log-msg { word-break: break-all; }
+        .log-info { color: #e4e4e7; } .log-warn { color: #facc15; } .log-error { color: #f87171; } .log-sys { color: #60a5fa; } .log-success { color: #4ade80; }
+
+        /* Data Tables */
+        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.875rem; }
+        .data-table th { text-align: left; padding: 0.6rem 1rem; color: var(--text-secondary); font-weight: 500; border-bottom: 1px solid var(--border-subtle); background: rgba(255,255,255,0.02); }
+        .data-table td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); transition: background 0.1s; }
+        .data-table tr:hover td { background: rgba(255,255,255,0.03); }
+        
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-get { background: rgba(16, 185, 129, 0.15); color: #10b981; } .badge-post { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .badge-200 { color: #10b981; } .badge-404 { color: #f59e0b; } .badge-500 { color: #ef4444; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: none; align-items: flex-start; justify-content: center; padding-top: 15vh; opacity: 0; transition: opacity 0.2s; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-content { background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg); width: 100%; max-width: 550px; box-shadow: 0 30px 100px rgba(0,0,0,0.6); transform: scale(0.95); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden; }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border-subtle); }
+        .modal-input { width: 100%; background: transparent; border: none; color: white; font-size: 1.1rem; outline: none; }
+        .action-list { padding: 1rem; max-height: 450px; overflow-y: auto; }
+        .action-item { display: flex; align-items: center; gap: 16px; padding: 1rem; border-radius: 8px; color: var(--text-secondary); cursor: pointer; transition: background 0.1s; border: 1px solid transparent; }
+        .action-item:hover { background: var(--bg-elevated); color: white; border-color: rgba(255,255,255,0.05); }
+        
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+        .stat-card { background: linear-gradient(145deg, rgba(20,20,20,0.8), rgba(10,10,10,0.8)); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 1.5rem; transition: var(--transition-fast); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .stat-card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
+        .stat-value { font-size: 1.8rem; font-weight: 700; margin-top: 0.5rem; font-family: var(--font-mono); letter-spacing: -1px; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
+
+        .file-upload-wrapper { position: relative; }
+        .file-upload-wrapper input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header" style="flex-direction: column; align-items: stretch; gap: 1rem;">
+            <div class="flex items-center gap-14px" style="gap: 14px;">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+                <span class="brand-text">ZOD</span>
+            </div>
+            <!-- Context Switcher -->
+            <div style="position: relative;">
+                <div id="contextSwitcherBtn" onclick="document.getElementById('contextDropdown').classList.toggle('hidden')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: var(--transition-fast);">
+                    <div class="flex items-center gap-2">
+                        <div id="contextIcon" style="width: 20px; height: 20px; border-radius: 4px; background: linear-gradient(135deg, var(--brand-blue), var(--brand-purple));"></div>
+                        <span id="contextName" style="font-size: 0.85rem; font-weight: 600;">Loading...</span>
+                    </div>
+                    <svg style="width: 14px; height: 14px; color: var(--text-secondary);"><polyline points="8 9 12 13 16 9"></polyline></svg>
+                </div>
+                <div id="contextDropdown" class="hidden" style="position: absolute; top: 110%; left: 0; width: 100%; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 50; overflow: hidden;">
+                    <div id="contextList"></div>
+                </div>
+            </div>
+        </div>
+        <nav class="nav-menu">
+            <div class="text-xs text-muted" style="padding: 0.75rem 1rem; font-weight: 600; letter-spacing: 1.5px; margin-top: 0.5rem; text-transform: uppercase;">Platform</div>
+            <a class="nav-item active" onclick="switchMainView('dashboard')">
+                <svg><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                Deployments
+            </a>
+            <a class="nav-item" onclick="switchMainView('volumes')">
+                <svg><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Object Storage
+            </a>
+            <a class="nav-item" onclick="switchMainView('settings')">
+                <svg><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                Settings & Envs
+            </a>
+            <a class="nav-item" onclick="switchMainView('billing')">
+                <svg><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                Billing & Usage
+            </a>
+            
+            <div class="text-xs text-muted" style="padding: 1rem 1rem 0.75rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;">Advanced</div>
+            <a class="nav-item" onclick="switchMainView('observability')">
+                <svg><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                Metrics & Health
+                <span class="nav-badge" id="navHealthBadge">OK</span>
+            </a>
+            <a class="nav-item" onclick="switchMainView('dbstudio')">
+                <svg><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                Database Studio
+            </a>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="breadcrumb" id="topBreadcrumb">
+                <span>Platform</span>
+                <svg><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <span class="current">Deployments</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="btn btn-outline" onclick="fetchHealth()"><svg><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg></button>
+                <button class="btn" onclick="openModal()"><svg><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> New Project</button>
+            </div>
+        </header>
+
+        <!-- VIEW: DASHBOARD (List of Deployments) -->
+        <div id="view-dashboard" class="view-container">
+            <div class="dashboard-grid">
+                <div class="card" style="grid-column: span 2;">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2>Recent Deployments</h2>
+                            <p class="text-sm text-muted" style="margin-bottom:0;">Manage and view your deployed applications and resources.</p>
+                        </div>
+                        <button class="btn btn-outline" style="padding: 0.5rem 0.75rem;" onclick="fetchDeployments()"><svg style="width:16px;height:16px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.36 5.36"/></svg></button>
+                    </div>
+                    <div id="deploymentsList" class="flex flex-col gap-2">
+                        <div class="p-6 text-center text-muted" style="padding: 4rem;">Loading deployments...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: DEPLOYMENT DETAILS (Tabs & Logs) -->
+        <div id="view-deployment" class="view-container hidden flex-col">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h1 class="font-mono mb-2" id="depTitle" style="font-size: 2rem;">dep_xyz</h1>
+                    <div class="flex items-center gap-6 text-sm text-muted">
+                        <span class="flex items-center gap-2"><div id="depStatusDot" class="status-indicator"></div> <span id="depStatusText" style="font-weight: 500;">Building...</span></span>
+                        <span id="depDate" style="display:flex; align-items:center; gap:6px;"><svg style="width:14px;height:14px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Oct 24, 2023</span>
+                        <a href="#" target="_blank" id="depUrl" style="color: var(--brand-blue); text-decoration: none; font-weight: 500; display:flex; align-items:center; gap:6px;">Generating URL...</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2" style="background: var(--bg-surface); padding: 6px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                    <button class="btn-outline" style="font-size:0.75rem; padding: 0.4rem 0.8rem; border: none; color: var(--text-secondary);" onclick="switchMainView('dashboard')">
+                        <svg style="width:14px;height:14px;margin-right:4px;"><polyline points="15 18 9 12 15 6"></polyline></svg> Back
+                    </button>
+                    <div style="width: 1px; height: 16px; background: var(--border-subtle);"></div>
+                    <button class="btn-outline" style="font-size:0.75rem; padding: 0.4rem 0.8rem; border: none; color: var(--status-warning);" onclick="rollbackDeployment(currentDeploymentId)" title="Rollback">
+                        <svg style="width:14px;height:14px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    </button>
+                    <button class="btn-outline" style="font-size:0.75rem; padding: 0.4rem 0.8rem; border: none; color: var(--status-error);" onclick="deleteDeployment(currentDeploymentId)" title="Delete">
+                        <svg style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs" id="depTabs">
+                <div class="tab active" onclick="switchTab('build')">Build Logs</div>
+                <div class="tab" onclick="switchTab('deploy')">Deployment Logs</div>
+                <div class="tab" onclick="switchTab('network')">Network Routing</div>
+                <div class="tab" onclick="switchTab('http')">HTTP Traffic</div>
+                <div class="tab" onclick="switchTab('terminal')" style="color: var(--brand-cyan);">Interactive Shell</div>
+            </div>
+
+            <div id="tab-build" class="log-console flex-1">
+                <div class="log-header">
+                    <div class="mac-dots"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+                    <span class="text-sm font-mono text-muted">nixpacks build --name core</span>
+                    <div></div>
+                </div>
+                <div class="log-body" id="buildLogBody"></div>
+            </div>
+            
+            <div id="tab-deploy" class="log-console flex-1 hidden">
+                <div class="log-header">
+                    <div class="mac-dots"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+                    <span class="text-sm font-mono text-muted">docker run orchestrator</span>
+                    <div></div>
+                </div>
+                <div class="log-body" id="deployLogBody"></div>
+            </div>
+
+            <div id="tab-network" class="log-console flex-1 hidden">
+                <div class="log-header">
+                    <div class="mac-dots"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+                    <span class="text-sm font-mono text-muted">cloudflared tunnel route</span>
+                    <div></div>
+                </div>
+                <div class="log-body" id="networkLogBody"></div>
+            </div>
+
+            <div id="tab-http" class="card flex-1 hidden" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; background: #000;">
+                <div class="log-header">
+                    <div class="mac-dots"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+                    <span class="text-sm font-mono text-muted">access.log</span>
+                    <div></div>
+                </div>
+                <div style="flex: 1; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead><tr><th>Time</th><th>Method</th><th>Path</th><th>Status</th><th>Latency</th></tr></thead>
+                        <tbody id="httpLogTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Xterm.js Container -->
+            <div id="tab-terminal" class="log-console flex-1 hidden">
+                <div class="log-header">
+                    <div class="mac-dots"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+                    <span class="text-sm font-mono text-muted">docker exec -it /bin/sh</span>
+                    <div></div>
+                </div>
+                <div id="terminal-container" style="width: 100%; height: 100%; padding: 1.5rem;"></div>
+            </div>
+        </div>
+
+        <!-- VIEW: OBSERVABILITY (Metrics) -->
+        <div id="view-observability" class="view-container hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2>Real-Time Resource Metrics</h2>
+                    <p class="text-sm text-muted" style="margin-bottom:0;">Live telemetry collected via Docker cgroups.</p>
+                </div>
+                <div class="flex items-center gap-3 bg-elevated" style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                    <div class="status-indicator ready pulse"></div> <span class="text-sm font-mono text-muted">Polling /stats</span>
+                </div>
+            </div>
+            
+            <div class="stat-grid mb-6">
+                <div class="stat-card">
+                    <div class="text-sm text-muted mb-1">Platform Status</div>
+                    <div class="stat-value text-green" id="obsStatus" style="color: var(--status-success);">Healthy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm text-muted mb-1">Uptime</div>
+                    <div class="stat-value" id="obsUptime">0s</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm text-muted mb-1">Active Containers</div>
+                    <div class="stat-value" id="obsDeployments">0</div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid mb-6" style="grid-template-columns: 1fr 1fr;">
+                <div class="card">
+                    <h3 class="mb-4">CPU Utilization (%)</h3>
+                    <div style="position: relative; height: 200px; width: 100%;">
+                        <canvas id="cpuChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="mb-4">Memory Utilization (MB)</h3>
+                    <div style="position: relative; height: 200px; width: 100%;">
+                        <canvas id="memChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 0; overflow: hidden; border: none;">
+                <div class="log-console" style="height: 350px; border-radius: var(--radius-lg);">
+                    <div class="log-header">
+                        <div class="mac-dots"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+                        <span class="text-sm font-mono text-muted">system-events.log</span>
+                        <div></div>
+                    </div>
+                    <div class="log-body" id="systemLogBody"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: SETTINGS -->
+        <div id="view-settings" class="view-container hidden">
+            <h2 class="mb-2">Project Settings & Secrets</h2>
+            <p class="text-muted mb-6">Manage global configuration, domains, and securely injected environment variables.</p>
+            
+            <div class="card mb-6">
+                <h3 class="mb-2">Environment Variables</h3>
+                <p class="text-sm text-muted mb-6">These variables will be injected into the Nixpacks build environment and the Docker container at runtime. Variables are encrypted at rest.</p>
+                <div class="flex gap-4 mb-6">
+                    <input type="text" id="envKey" class="input" placeholder="KEY (e.g. DATABASE_URL)" style="width: 30%;">
+                    <input type="password" id="envValue" class="input" placeholder="VALUE" style="flex: 1;">
+                    <button class="btn" onclick="addEnvVar()">Add Secret</button>
+                </div>
+                <div style="border: 1px solid var(--border-subtle); border-radius: 8px; overflow: hidden;">
+                    <table class="data-table" style="margin: 0;">
+                        <thead><tr><th>Key</th><th>Value</th><th>Added</th><th></th></tr></thead>
+                        <tbody id="envTableBody">
+                            <!-- Dynamic env vars go here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="mb-2">Custom Domains</h3>
+                <p class="text-sm text-muted mb-6">Map a custom domain to this project. The router will automatically provision and renew an SSL certificate via Let's Encrypt.</p>
+                <div class="flex gap-4 mb-6">
+                    <input type="text" id="domainInput" class="input" placeholder="www.myapp.com" style="flex: 1;">
+                    <button class="btn" onclick="addDomain()">Add Domain</button>
+                </div>
+                <div style="border: 1px solid var(--border-subtle); border-radius: 8px; overflow: hidden;">
+                    <table class="data-table" style="margin: 0;">
+                        <thead><tr><th>Domain</th><th>Status</th><th>Added</th><th></th></tr></thead>
+                        <tbody id="domainsTableBody">
+                            <!-- Dynamic domains go here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: DATABASE STUDIO -->
+        <div id="view-dbstudio" class="view-container hidden">
+            <h2 class="mb-2">Database Studio (PostgreSQL)</h2>
+            <p class="text-muted mb-6">Manage your stateful containers and execute raw SQL queries directly.</p>
+            
+            <div class="dashboard-grid">
+                <div class="card" style="height: 60vh;">
+                    <h3 class="mb-6">Provisioned Databases</h3>
+                    <div id="databasesList" class="flex flex-col gap-2">
+                        <div class="p-6 text-center text-muted" style="padding: 1.5rem;">Loading databases...</div>
+                    </div>
+                </div>
+                <div class="card flex-col flex" style="height: 60vh;">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3>SQL Query Editor</h3>
+                        <button class="btn" style="padding: 0.5rem 1rem;" onclick="executeDBQuery()"><svg><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Execute Query</button>
+                    </div>
+                    <textarea id="dbQueryInput" class="input font-mono text-sm" style="height: 160px; resize: none; padding: 1rem; line-height: 1.6; background: #050505;" placeholder="-- Write your SQL query here&#10;SELECT * FROM users LIMIT 10;"></textarea>
+                    
+                    <h3 class="mt-4 mb-2 text-sm text-muted">Results</h3>
+                    <div id="dbQueryResults" style="white-space: pre-wrap; flex: 1; border: 1px solid var(--border-subtle); background: #050505; border-radius: 8px; padding: 1rem; color: var(--text-secondary); font-size: 0.85rem; overflow-y: auto; font-family: var(--font-mono);">
+                        > Awaiting query execution...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: BILLING & USAGE -->
+        <div id="view-billing" class="view-container hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="mb-2">Billing & Usage Overview</h2>
+                    <p class="text-sm text-muted" style="margin-bottom:0;">Manage your subscription, invoices, and compute usage.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-grid mb-6">
+                <div class="card" style="background: linear-gradient(135deg, rgba(121, 40, 202, 0.1), rgba(0, 112, 243, 0.1)); border-color: rgba(121, 40, 202, 0.3);">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <div id="billingPlanBadge" class="badge mb-2" style="background: rgba(121, 40, 202, 0.2); color: #c084fc; text-transform: uppercase;">Loading...</div>
+                            <h3 style="font-size: 2rem; margin-bottom: 4px;"><span id="billingPrice">$0.00</span> <span style="font-size: 1rem; color: var(--text-secondary); font-weight: normal;">/ month</span></h3>
+                            <p id="billingStatusText" class="text-sm text-muted">Fetching subscription details...</p>
+                        </div>
+                        <button class="btn" style="background: linear-gradient(135deg, var(--brand-purple), var(--brand-blue)); color: white; border: none; box-shadow: 0 4px 14px rgba(121, 40, 202, 0.4);">Manage Subscription</button>
+                    </div>
+                    
+                    <div style="border-top: 1px solid var(--border-subtle); padding-top: 1.5rem;">
+                        <h3 class="text-sm mb-4">Current Usage Cycle</h3>
+                        <div class="mb-4">
+                            <div class="flex justify-between text-xs mb-1"><span>Serverless Execution (GB-hrs)</span> <span>42 / 100</span></div>
+                            <div style="height:6px; background:rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden;"><div style="height:100%; width:42%; background:var(--brand-purple);"></div></div>
+                        </div>
+                        <div class="mb-4">
+                            <div class="flex justify-between text-xs mb-1"><span>Bandwidth (GB)</span> <span>1.2 / 10</span></div>
+                            <div style="height:6px; background:rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden;"><div style="height:100%; width:12%; background:var(--brand-blue);"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="mb-4">Payment Methods</h3>
+                    <div id="paymentMethodsList" class="flex flex-col gap-3">
+                        <!-- Dynamic payment methods go here -->
+                        <div class="p-4 text-center text-muted">Loading payment methods...</div>
+                    </div>
+                    
+                    <div id="addPaymentForm" class="hidden mt-4" style="border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px; background: rgba(255,255,255,0.02);">
+                        <h4 class="text-sm mb-3">Add New Card</h4>
+                        <input type="text" id="newCardNum" class="input mb-2" placeholder="Card Number (e.g. 4242 4242 4242 4242)">
+                        <div class="flex gap-2 mb-3">
+                            <input type="text" id="newCardExp" class="input" placeholder="MM/YY" style="flex:1;">
+                            <input type="text" id="newCardCvc" class="input" placeholder="CVC" style="flex:1;">
+                        </div>
+                        <div class="flex justify-between">
+                            <button class="btn-outline" onclick="document.getElementById('addPaymentForm').classList.add('hidden')" style="padding: 0.4rem 0.8rem;">Cancel</button>
+                            <button class="btn" onclick="savePaymentMethod()" style="padding: 0.4rem 0.8rem;">Save Card</button>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-outline mt-4" style="width: 100%; border-style: dashed;" onclick="document.getElementById('addPaymentForm').classList.remove('hidden')">+ Add Payment Method</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3 class="mb-4">Recent Invoices</h3>
+                <table class="data-table">
+                    <thead><tr><th>Invoice</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="invoicesTableBody">
+                        <tr><td colspan="5" class="text-center text-muted">Loading invoices...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW: VOLUMES -->
+        <div id="view-volumes" class="view-container hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2>Object Storage Bucket</h2>
+                    <p class="text-sm text-muted" style="margin-bottom:0;">Browse artifacts, zip uploads, and cloned repositories.</p>
+                </div>
+                <button class="btn btn-outline" onclick="fetchVolumes()"><svg><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l-5.36 5.36"/></svg> Refresh</button>
+            </div>
+            
+            <div class="stat-grid mb-6">
+                <div class="stat-card">
+                    <div class="text-sm text-muted mb-1">Total Usage</div>
+                    <div class="stat-value"><span id="volSize">0.00</span> MB <span class="text-sm text-muted" style="font-weight: 400;">/ 10 GB</span></div>
+                    <div style="height:6px; background:var(--border-subtle); margin-top:16px; border-radius: 4px; overflow: hidden;"><div id="volUsageBar" style="height:100%; width:0%; background:var(--brand-blue); transition: width 0.5s ease;"></div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-sm text-muted mb-1">Total Objects</div>
+                    <div class="stat-value" id="volCount">0</div>
+                </div>
+            </div>
+            
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <table class="data-table">
+                    <thead><tr><th>Object Key (Path)</th><th>Project</th><th>Size</th><th>Last Modified</th></tr></thead>
+                    <tbody id="volTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- NEW PROJECT MODAL -->
+    <div class="modal-overlay" id="newProjectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <input type="text" class="modal-input" placeholder="Deploy new resource..." readonly>
+            </div>
+            <div class="action-list">
+                <!-- GitHub Option -->
+                <div class="action-item" onclick="document.getElementById('ghInputDiv').classList.toggle('hidden')">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px;"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                    <div style="flex:1;">
+                        <div style="font-weight:600; margin-bottom: 2px;">Import from GitHub Repository</div>
+                        <div class="text-xs text-muted">Auto-deploy on push via Webhooks</div>
+                    </div>
+                </div>
+                <!-- GitHub Input -->
+                <div id="ghInputDiv" class="hidden" style="padding: 0.5rem 1.5rem 1.5rem 3.5rem;">
+                    <div class="flex gap-4">
+                        <input type="text" class="input" id="ghRepoUrl" placeholder="https://github.com/user/repo" style="flex:1;">
+                        <button class="btn" onclick="triggerGithubWebhook()">Link Repo</button>
+                    </div>
+                </div>
+
+                <label class="action-item file-upload-wrapper" id="zipUploadWrapper">
+                    <input type="file" id="zipUploadInput" accept=".zip">
+                    <svg style="width: 20px; height: 20px;" id="zipUploadIcon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <div id="zipUploadTextContainer">
+                        <div style="font-weight:600; margin-bottom: 2px;" id="zipUploadTitle">Deploy source code (ZIP)</div>
+                        <div class="text-xs text-muted" id="zipUploadSubtitle">Fallback upload mechanism for local artifacts</div>
+                    </div>
+                </label>
+                
+                <div class="action-item" onclick="provisionDatabase()">
+                    <svg style="width: 20px; height: 20px;"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                    <div>
+                        <div style="font-weight:600; margin-bottom: 2px;">Provision PostgreSQL Database</div>
+                        <div class="text-xs text-muted">Instantly spins up a stateful Postgres instance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div class="modal-overlay active" id="loginModal" style="display: flex; background: rgba(0,0,0,0.9); z-index: 9999;">
+        <div class="modal-content" style="max-width: 400px; padding: 2rem;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Welcome to ZOD CLOUD</h2>
+                <p class="text-sm text-muted">Sign in to manage your deployments</p>
+            </div>
+            <input type="email" id="loginEmail" class="input mb-4" placeholder="Email address" value="demo@zod.cloud">
+            <input type="password" id="loginPass" class="input mb-6" placeholder="Password" value="password123">
+            <button class="btn" style="width: 100%; justify-content: center;" onclick="performLogin()">Sign In</button>
+            <div class="mt-4 text-center text-xs text-muted">Demo mode: Just click Sign In</div>
+        </div>
+    </div>
+
+    <!-- Scripts: defer so they NEVER block page rendering but load predictably -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js" defer></script>
+    <script>
+        let currentDeploymentId = null;
+        let eventSources = {};
+        let xtermTerminal = null;
+        let wsTerminal = null;
+        
+        // --- Context & Billing State ---
+        let currentContext = { id: 'user_1', name: 'Personal Account', isTeam: false };
+        let allContexts = { personal: null, teams: [] };
+
+        async function performLogin() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            try {
+                const res = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: document.getElementById('loginEmail').value,
+                        pass: document.getElementById('loginPass').value
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if(res.ok) {
+                    document.getElementById('loginModal').style.display = 'none';
+                    // initialize app
+                    await fetchContext();
+                    await fetchDeployments();
+                    await fetchEnvVars();
+                    fetchHealth();
+                    fetchBilling();
+                } else {
+                    alert('Login failed. Please try again.');
+                }
+            } catch(e) {
+                clearTimeout(timeoutId);
+                alert('Connection error or timeout.');
+            }
+        }
+
+        async function fetchContext() {
+            try {
+                const res = await fetch('/api/v1/user/context');
+                const data = await res.json();
+                allContexts = data;
+                currentContext = { id: data.personal.id, name: data.personal.name, isTeam: false };
+                updateContextUI();
+            } catch (e) {
+                console.error("Failed to fetch context", e);
+            }
+        }
+
+        function updateContextUI() {
+            document.getElementById('contextName').textContent = currentContext.name;
+            const list = document.getElementById('contextList');
+            list.innerHTML = '';
+            
+            // Add Personal
+            const pItem = document.createElement('div');
+            pItem.className = 'action-item';
+            pItem.style.padding = '10px 16px';
+            pItem.style.borderRadius = '0';
+            pItem.innerHTML = `<span style="font-weight:600; font-size: 0.85rem;">${allContexts.personal.name}</span>`;
+            pItem.onclick = () => switchContext(allContexts.personal.id, allContexts.personal.name, false);
+            list.appendChild(pItem);
+            
+            // Add Teams
+            allContexts.teams.forEach(t => {
+                const tItem = document.createElement('div');
+                tItem.className = 'action-item';
+                tItem.style.padding = '10px 16px';
+                tItem.style.borderRadius = '0';
+                tItem.innerHTML = `<span style="font-weight:600; font-size: 0.85rem;">Team: ${t.name}</span>`;
+                tItem.onclick = () => switchContext(t.id, t.name, true);
+                list.appendChild(tItem);
+            });
+        }
+
+        function switchContext(id, name, isTeam) {
+            currentContext = { id, name, isTeam };
+            document.getElementById('contextDropdown').classList.add('hidden');
+            updateContextUI();
+            
+            // Re-fetch data for the new context
+            fetchDeployments();
+            fetchBilling();
+        }
+
+        async function fetchBilling() {
+            try {
+                const res = await fetch(`/api/v1/billing?context_id=${currentContext.id}&is_team=${currentContext.isTeam}`);
+                const data = await res.json();
+                
+                const badge = document.getElementById('billingPlanBadge');
+                const price = document.getElementById('billingPrice');
+                const status = document.getElementById('billingStatusText');
+                
+                badge.textContent = data.plan + ' Plan';
+                
+                if (data.plan === 'hobby') {
+                    price.textContent = '$0.00';
+                    status.textContent = 'Free forever for personal projects.';
+                    badge.style.color = '#10b981';
+                    badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                } else if (data.plan === 'pro') {
+                    price.textContent = '$20.00';
+                    status.textContent = 'Active subscription. Renews in 14 days.';
+                    badge.style.color = '#3b82f6';
+                    badge.style.background = 'rgba(59, 130, 246, 0.2)';
+                } else if (data.plan === 'ultra') {
+                    price.textContent = '$99.00';
+                    status.textContent = 'Enterprise tier. Unmetered bandwidth.';
+                    badge.style.color = '#c084fc';
+                    badge.style.background = 'rgba(121, 40, 202, 0.2)';
+                }
+                
+                // Fetch dynamic sub-resources
+                fetchPaymentMethods();
+                fetchInvoices();
+            } catch (e) {
+                console.error("Failed to fetch billing", e);
+            }
+        }
+        
+        async function fetchPaymentMethods() {
+            try {
+                const res = await fetch(`/api/v1/payment-methods?context_id=${currentContext.id}`);
+                const data = await res.json();
+                const list = document.getElementById('paymentMethodsList');
+                list.innerHTML = '';
+                if (!data || data.length === 0) {
+                    list.innerHTML = `<div class="p-4 text-center text-muted text-sm">No payment methods added.</div>`;
+                    return;
+                }
+                data.forEach(pm => {
+                    list.innerHTML += `
+                    <div style="border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02);">
+                        <div class="flex items-center gap-3">
+                            <div style="background: #ffffff; border-radius: 4px; padding: 4px 8px; font-weight: 700; color: #1a1f36; font-size: 0.8rem; font-style: italic; text-transform: uppercase;">${pm.brand}</div>
+                            <div>
+                                <div style="font-weight: 500; font-size: 0.9rem;">${pm.brand} ending in ${pm.last4}</div>
+                                <div class="text-xs text-muted">Expires ${pm.exp}</div>
+                            </div>
+                        </div>
+                        ${pm.is_default ? '<span class="badge" style="background: rgba(255,255,255,0.1);">Default</span>' : ''}
+                    </div>`;
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function fetchInvoices() {
+            try {
+                const res = await fetch(`/api/v1/invoices?context_id=${currentContext.id}`);
+                const data = await res.json();
+                const tbody = document.getElementById('invoicesTableBody');
+                tbody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No invoices found for this billing cycle.</td></tr>`;
+                    return;
+                }
+                data.forEach(inv => {
+                    let statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">Paid</span>`;
+                    if (inv.status === 'pending') statusBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">Pending</span>`;
+                    tbody.innerHTML += `
+                    <tr>
+                        <td class="font-mono">${inv.id}</td>
+                        <td>${new Date(inv.date).toLocaleDateString()}</td>
+                        <td>$${inv.amount.toFixed(2)}</td>
+                        <td>${statusBadge}</td>
+                        <td><a href="#" style="color: var(--brand-blue); text-decoration: none; font-size: 0.85rem;">Download PDF</a></td>
+                    </tr>`;
+                });
+            } catch (e) { console.error(e); }
+        }
+        
+        async function savePaymentMethod() {
+            const num = document.getElementById('newCardNum').value;
+            const exp = document.getElementById('newCardExp').value;
+            if (!num || !exp) { alert('Please enter card details.'); return; }
+            const last4 = num.slice(-4);
+            
+            await fetch(`/api/v1/payment-methods?context_id=${currentContext.id}`, {
+                method: 'POST', body: JSON.stringify({ brand: 'Card', last4: last4, exp: exp, is_default: true })
+            });
+            
+            document.getElementById('newCardNum').value = '';
+            document.getElementById('newCardExp').value = '';
+            document.getElementById('newCardCvc').value = '';
+            document.getElementById('addPaymentForm').classList.add('hidden');
+            fetchPaymentMethods();
+        }
+        
+        // Ensure Context is fetched on load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Wait for user to login
+        });
+
+        // Chart variables (lazy init)
+        let cpuChart, memChart;
+        let chartsInitialized = false;
+
+        function initCharts() {
+            if (chartsInitialized) return;
+            chartsInitialized = true;
+            
+            Chart.defaults.color = '#888888';
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            const ctxCpu = document.getElementById('cpuChart').getContext('2d');
+            const ctxMem = document.getElementById('memChart').getContext('2d');
+            
+            let cpuGrad = ctxCpu.createLinearGradient(0, 0, 0, 200);
+            cpuGrad.addColorStop(0, 'rgba(80, 227, 194, 0.4)');
+            cpuGrad.addColorStop(1, 'rgba(80, 227, 194, 0.01)');
+            
+            let memGrad = ctxMem.createLinearGradient(0, 0, 0, 200);
+            memGrad.addColorStop(0, 'rgba(0, 112, 243, 0.4)');
+            memGrad.addColorStop(1, 'rgba(0, 112, 243, 0.01)');
+
+            cpuChart = new Chart(ctxCpu, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'CPU %', data: [], borderColor: '#50e3c2', backgroundColor: cpuGrad, borderWidth: 2, fill: true, pointRadius: 0, tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }, animation: false }
+            });
+
+            memChart = new Chart(ctxMem, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'RAM MB', data: [], borderColor: '#0070f3', backgroundColor: memGrad, borderWidth: 2, fill: true, pointRadius: 0, tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }, animation: false }
+            });
+        }
+
+        // Navigation
+        function switchMainView(viewId) {
+            // Kill orphaned deployment poller
+            if (deploymentStatusInterval) {
+                clearInterval(deploymentStatusInterval);
+                deploymentStatusInterval = null;
+            }
+            // Kill terminal socket if leaving deployment view
+            if (viewId !== 'deployment' && wsTerminal) {
+                wsTerminal.close(); wsTerminal = null;
+            }
+            if (viewId !== 'deployment' && xtermTerminal) {
+                xtermTerminal.dispose(); xtermTerminal = null;
+            }
+
+            document.querySelectorAll('.view-container').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            const activeNav = document.querySelector(`.nav-item[onclick="switchMainView('${viewId}')"]`);
+            if(activeNav) activeNav.classList.add('active');
+            
+            const bc = document.getElementById('topBreadcrumb');
+            if(viewId === 'dashboard') { bc.innerHTML = `<span>Platform</span><svg><polyline points="9 18 15 12 9 6"></polyline></svg><span class="current">Deployments</span>`; fetchDeployments(); }
+            if(viewId === 'observability') { bc.innerHTML = `<span>Platform</span><svg><polyline points="9 18 15 12 9 6"></polyline></svg><span class="current">Metrics & Health</span>`; initCharts(); fetchHealth(); openSSE('all', 'system'); openSSE('all', 'metrics'); }
+            if(viewId === 'volumes') { bc.innerHTML = `<span>Platform</span><svg><polyline points="9 18 15 12 9 6"></polyline></svg><span class="current">Object Storage</span>`; fetchVolumes(); }
+            if(viewId === 'settings') { bc.innerHTML = `<span>Platform</span><svg><polyline points="9 18 15 12 9 6"></polyline></svg><span class="current">Settings & Secrets</span>`; fetchEnvVars(); }
+            if(viewId === 'billing') { bc.innerHTML = `<span>Platform</span><svg><polyline points="9 18 15 12 9 6"></polyline></svg><span class="current">Billing & Usage</span>`; fetchBilling(); }
+            if(viewId === 'dbstudio') { bc.innerHTML = `<span>Platform</span><svg><polyline points="9 18 15 12 9 6"></polyline></svg><span class="current">Database Studio</span>`; fetchDatabases(); }
+        }
+
+        let deploymentStatusInterval = null;
+
+        function viewDeployment(id, status, url, date, isNamed) {
+            currentDeploymentId = id;
+            if (cpuChart) { cpuChart.data.labels = []; cpuChart.data.datasets[0].data = []; cpuChart.update(); }
+            if (memChart) { memChart.data.labels = []; memChart.data.datasets[0].data = []; memChart.update(); }
+
+            document.querySelectorAll('.view-container').forEach(el => el.classList.add('hidden'));
+            document.getElementById('view-deployment').classList.remove('hidden');
+            document.getElementById('view-deployment').style.display = 'flex';
+            
+            document.getElementById('topBreadcrumb').innerHTML = `<span>Platform</span><svg><polyline points="9 18 15 12 9 6"></polyline></svg><span style="cursor:pointer;" onclick="switchMainView('dashboard')">Deployments</span><svg><polyline points="9 18 15 12 9 6"></polyline></svg><span class="current font-mono">${id.substring(0,8)}</span>`;
+            document.getElementById('depTitle').textContent = `Deployment ${id}`;
+            document.getElementById('depDate').innerHTML = `<svg style="width:14px;height:14px;display:inline;vertical-align:-2px;margin-right:4px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> ${new Date(date).toLocaleString()}`;
+            
+            updateDeploymentViewHeader(status, url, isNamed);
+
+            document.getElementById('buildLogBody').innerHTML = '';
+            document.getElementById('deployLogBody').innerHTML = '';
+            document.getElementById('httpLogTableBody').innerHTML = '';
+            document.getElementById('networkLogBody').innerHTML = '';
+            
+            switchTab('build');
+            closeAllSSE();
+            openSSE(id, 'build'); openSSE(id, 'deploy'); openSSE(id, 'http'); openSSE(id, 'network');
+
+            if (!url || status !== 'running') {
+                if (deploymentStatusInterval) clearInterval(deploymentStatusInterval);
+                deploymentStatusInterval = setInterval(async () => {
+                    try {
+                        const res = await fetch(`/api/v1/deployments/status?id=${id}`);
+                        const data = await res.json();
+                        if (data.status === 'running' || data.status === 'READY') {
+                            updateDeploymentViewHeader('running', data.public_url || data.url, true);
+                            clearInterval(deploymentStatusInterval);
+                            fetchDeployments(); // update dashboard silently in bg
+                        } else if (data.status !== status) {
+                            // If status progressed (e.g. queued -> building -> deploying)
+                            status = data.status;
+                            updateDeploymentViewHeader(data.status, data.public_url || data.url, true);
+                            fetchDeployments();
+                        }
+                    } catch(e) {}
+                }, 3000);
+            }
+        }
+
+        function updateDeploymentViewHeader(status, url, isNamed) {
+            const dot = document.getElementById('depStatusDot');
+            const txt = document.getElementById('depStatusText');
+            const urlEl = document.getElementById('depUrl');
+            
+            const stateMap = {
+                'queued': { txt: 'Queued', color: 'pulse' },
+                'building': { txt: 'Building...', color: 'pulse' },
+                'deploying': { txt: 'Deploying Container...', color: 'pulse' },
+                'running': { txt: 'Running', color: 'ready' },
+                'failed': { txt: 'Deployment Failed', color: 'error' },
+                'READY': { txt: 'Running', color: 'ready' },
+                'ERROR': { txt: 'Deployment Failed', color: 'error' }
+            };
+
+            const sInfo = stateMap[status] || { txt: 'Building...', color: 'pulse' };
+
+            dot.className = `status-indicator ${sInfo.color}`;
+            txt.textContent = sInfo.txt;
+
+            if ((status === 'running' || status === 'READY') && url && url !== "undefined") {
+                const tag = isNamed ? `<span class="badge" style="background:rgba(121,40,202,0.2); color:var(--brand-purple); margin-left:8px;">Named</span>` : '';
+                urlEl.innerHTML = `<svg style="width:16px;height:16px;display:inline;vertical-align:-3px;margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> ${url.replace('https://', '')} ${tag}`;
+                urlEl.href = url;
+            } else if (status === 'failed' || status === 'ERROR') {
+                urlEl.innerHTML = 'Unavailable';
+                urlEl.href = '#';
+            } else {
+                urlEl.innerHTML = 'Generating URL...';
+                urlEl.href = '#';
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            ['build','deploy','http','network','terminal'].forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            if (tabId === 'terminal') {
+                initWebTerminal(currentDeploymentId);
+            } else {
+                if (wsTerminal) { wsTerminal.close(); wsTerminal = null; }
+                if (xtermTerminal) { xtermTerminal.dispose(); xtermTerminal = null; }
+            }
+        }
+
+        function initWebTerminal(depId) {
+            const container = document.getElementById('terminal-container');
+            container.innerHTML = '';
+            if (wsTerminal) wsTerminal.close();
+            
+            xtermTerminal = new Terminal({ theme: { background: '#000000', foreground: '#ededed' }, fontFamily: "'JetBrains Mono', monospace", fontSize: 13, cursorBlink: true });
+            xtermTerminal.open(container);
+            xtermTerminal.write('Connecting to Docker Container ' + depId.substring(0,8) + '...\r\n');
+
+            const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            wsTerminal = new WebSocket(`${proto}//${location.host}/api/v1/deployments/terminal?deployment_id=${depId}`);
+
+            wsTerminal.onopen = () => { xtermTerminal.write('\r\n\x1b[32m[Connected to namespace]\x1b[0m\r\n'); };
+            wsTerminal.onmessage = (evt) => { xtermTerminal.write(evt.data); };
+            wsTerminal.onclose = () => { xtermTerminal.write('\r\n\x1b[31m[Connection Terminated]\x1b[0m\r\n'); };
+            
+            xtermTerminal.onData(data => { if(wsTerminal.readyState === WebSocket.OPEN) wsTerminal.send(data); });
+        }
+
+        // Safely initialize modal after DOM is ready (not at parse time)
+        let modal = null;
+        function openModal() {
+            if (!modal) modal = document.getElementById('newProjectModal');
+            if (modal) modal.classList.add('active');
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            modal = document.getElementById('newProjectModal');
+            if (modal) {
+                modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.remove('active'); });
+            }
+            // Attach zip upload listener safely
+            const zipInput = document.getElementById('zipUploadInput');
+            if (zipInput) {
+                zipInput.addEventListener('change', (e) => {
+                    handleZipUpload(e);
+                    e.target.value = ''; // Reset for next selection
+                });
+            }
+            // Close context dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                const dropdown = document.getElementById('contextDropdown');
+                const btn = document.getElementById('contextSwitcherBtn');
+                if (dropdown && btn && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        });
+
+        async function triggerGithubWebhook() {
+            const url = document.getElementById('ghRepoUrl').value;
+            if(!url) return;
+            const repoName = url.split('/').pop().replace('.git', '');
+            
+            const payload = {
+                ref: "refs/heads/main",
+                repository: { name: repoName, clone_url: url },
+                head_commit: { id: "manual-trigger" }
+            };
+
+            await fetch('/api/v1/webhooks/github', {
+                method: 'POST', body: JSON.stringify(payload)
+            });
+            const m = document.getElementById('newProjectModal');
+            if(m) m.classList.remove('active');
+            alert(`Webhook simulated! Cloning repository ${repoName} in the background. Check Deployments.`);
+            fetchDeployments();
+        }
+
+        async function fetchDeployments() {
+            try {
+                const res = await fetch('/api/v1/deployments');
+                const deps = await res.json();
+                const list = document.getElementById('deploymentsList');
+                if(!deps || deps.length === 0) { list.innerHTML = `<div class="p-6 text-center text-muted" style="padding: 4rem;">No deployments yet. Click "New Project" to start.</div>`; return; }
+                
+                let html = '';
+                deps.forEach(dep => {
+                    let statusIcon = `<div class="status-indicator pulse"></div>`;
+                    let isReady = false;
+
+                    if (dep.status === 'running' || dep.status === 'READY') { statusIcon = `<div class="status-indicator ready"></div>`; isReady = true; }
+                    else if (dep.status === 'failed' || dep.status === 'ERROR') statusIcon = `<div class="status-indicator error"></div>`;
+                    else if (dep.status === 'queued') statusIcon = `<div class="status-indicator" style="background:#52525b; box-shadow:none;"></div>`;
+                    
+                    const uiUrl = dep.public_url || dep.url;
+                    let urlTag = uiUrl ? `<a href="${uiUrl}" target="_blank" onclick="event.stopPropagation()" style="color:var(--brand-blue); text-decoration:none;">${uiUrl.replace('https://', '')}</a>` : `<span class="text-muted text-xs">Waiting for deployment router...</span>`;
+                    
+                    html += `
+                        <div class="project-card" onclick="viewDeployment('${dep.id}', '${dep.status}', '${uiUrl || ''}', '${dep.created_at}', true)">
+                            <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;"><svg style="color:var(--brand-purple); width:24px; height:24px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1.05rem; margin-bottom: 4px;">Project ${dep.project_id || dep.id.substring(0,8)}</div>
+                                <div class="text-xs text-muted flex items-center gap-2">${statusIcon} <span style="text-transform: capitalize;">${dep.status}</span> • ${new Date(dep.created_at).toLocaleString()}</div>
+                            </div>
+                            <div class="text-sm font-mono" style="text-align: right;">${urlTag}</div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            } catch(e) {}
+        }
+
+        // EventSources for SSE — with exponential backoff to prevent main-thread lock-up
+        let sseBackoffTimers = {};
+        let sseRetryCounts = {};
+        function openSSE(depId, type) {
+            if(sseBackoffTimers[type]) { clearTimeout(sseBackoffTimers[type]); delete sseBackoffTimers[type]; }
+            if(eventSources[type]) { try { eventSources[type].close(); } catch(e) {} delete eventSources[type]; }
+
+            sseRetryCounts[type] = 0;
+            const MAX_SSE_RETRIES = 20;
+            let retryDelay = 2000;
+            let es;
+
+            function connect() {
+                if (sseRetryCounts[type] >= MAX_SSE_RETRIES) return;
+                es = new EventSource(`/api/v1/logs/stream?deployment_id=${depId}&type=${type}`);
+                eventSources[type] = es;
+                es.onopen = () => { sseRetryCounts[type] = 0; retryDelay = 2000; };
+                es.onmessage = (event) => {
+                    try {
+                        const log = JSON.parse(event.data);
+                        appendLog(log);
+                    } catch(e) {}
+                };
+                es.onerror = () => {
+                    es.close();
+                    delete eventSources[type];
+                    sseRetryCounts[type]++;
+                    retryDelay = Math.min(retryDelay * 2, 30000);
+                    sseBackoffTimers[type] = setTimeout(connect, retryDelay);
+                };
+            }
+            connect();
+        }
+
+        function closeAllSSE() {
+            Object.values(sseBackoffTimers).forEach(t => clearTimeout(t));
+            sseBackoffTimers = {};
+            Object.values(eventSources).forEach(es => { try { es.close(); } catch(e) {} });
+            eventSources = {};
+            sseRetryCounts = {};
+        }
+
+        let logBuffer = [];
+        let logFlushTimer = null;
+        const MAX_HTTP_ROWS = 500;
+
+        function appendLog(log) {
+            if(log.log_type === 'metrics') {
+                try {
+                    const metrics = JSON.parse(log.message);
+                    const now = new Date(log.timestamp).toLocaleTimeString();
+                    
+                    const cpuVal = parseFloat(metrics.cpu.replace('%', ''));
+                    cpuChart.data.labels.push(now);
+                    cpuChart.data.datasets[0].data.push(cpuVal);
+                    if(cpuChart.data.labels.length > 20) { cpuChart.data.labels.shift(); cpuChart.data.datasets[0].data.shift(); }
+
+                    let memStr = metrics.mem;
+                    let memVal = 0;
+                    if(memStr.includes('GiB')) memVal = parseFloat(memStr) * 1024;
+                    else if(memStr.includes('MiB')) memVal = parseFloat(memStr);
+                    else if(memStr.includes('MB')) memVal = parseFloat(memStr);
+                    else if(memStr.includes('GB')) memVal = parseFloat(memStr) * 1024;
+                    else memVal = parseFloat(memStr) || 0;
+
+                    memChart.data.labels.push(now);
+                    memChart.data.datasets[0].data.push(memVal);
+                    if(memChart.data.labels.length > 20) { memChart.data.labels.shift(); memChart.data.datasets[0].data.shift(); }
+
+                    if (!window.chartUpdateTimeout) {
+                        window.chartUpdateTimeout = setTimeout(() => {
+                            cpuChart.update();
+                            memChart.update();
+                            window.chartUpdateTimeout = null;
+                        }, 50);
+                    }
+                } catch(e) {}
+                return;
+            }
+
+            logBuffer.push(log);
+
+            if (logFlushTimer) return;
+            logFlushTimer = setTimeout(() => {
+                requestAnimationFrame(() => {
+                    const batches = {};
+                    let httpHtml = '';
+
+                    logBuffer.forEach(l => {
+                        if (l.log_type === 'http') {
+                            const time = new Date(l.timestamp).toLocaleTimeString();
+                            const msgParts = l.message.split(' ');
+                            const method = msgParts[0];
+                            const path = msgParts[1];
+                            const status = msgParts[2];
+                            const latency = msgParts[3];
+                            let badgeClass = 'badge-get';
+                            if(method === 'POST') badgeClass = 'badge-post';
+                            let statusColor = '#e4e4e7';
+                            if(status && status.startsWith('2')) statusColor = '#10b981';
+                            if(status && status.startsWith('4')) statusColor = '#f59e0b';
+                            if(status && status.startsWith('5')) statusColor = '#ef4444';
+                            httpHtml += `<tr><td class="text-xs text-muted font-mono">${time}</td><td><span class="badge ${badgeClass}">${method}</span></td><td class="font-mono text-xs">${path}</td><td class="font-mono text-xs" style="color: ${statusColor};">${status}</td><td class="font-mono text-xs text-muted">${latency}</td></tr>`;
+                            return;
+                        }
+
+                        let targetId = null;
+                        if(l.log_type === 'build') targetId = 'buildLogBody';
+                        if(l.log_type === 'deploy') targetId = 'deployLogBody';
+                        if(l.log_type === 'network') targetId = 'networkLogBody';
+                        if(l.log_type === 'system') targetId = 'systemLogBody';
+                        
+                        if (!targetId) return;
+                        if (!batches[targetId]) batches[targetId] = { el: document.getElementById(targetId), html: [] };
+                        
+                        const time = new Date(l.timestamp).toLocaleTimeString();
+                        let colorClass = 'log-info';
+                        if(l.level === 'error') colorClass = 'log-error';
+                        if(l.level === 'warn') colorClass = 'log-warn';
+                        if(l.level === 'debug') colorClass = 'log-sys';
+                        if(l.message.includes('✅')) colorClass = 'log-success';
+                        
+                        batches[targetId].html.push(
+                            `<div class="log-line"><span class="log-ts">[${time}]</span><span class="log-msg ${colorClass}">${escapeHTML(l.message)}</span></div>`
+                        );
+                    });
+
+                    Object.values(batches).forEach(batch => {
+                        if (!batch.el) return;
+                        const frag = document.createElement('template');
+                        frag.innerHTML = batch.html.join('');
+                        batch.el.appendChild(frag.content);
+                        batch.el.scrollTop = batch.el.scrollHeight;
+                    });
+
+                    if (httpHtml) {
+                        const httpBody = document.getElementById('httpLogTableBody');
+                        if (httpBody) {
+                            httpBody.insertAdjacentHTML('beforeend', httpHtml);
+                            while (httpBody.children.length > MAX_HTTP_ROWS) {
+                                httpBody.removeChild(httpBody.firstChild);
+                            }
+                        }
+                    }
+
+                    logBuffer = [];
+                    logFlushTimer = null;
+                });
+            }, 150);
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])
+            );
+        }
+
+        // Zip upload handler — attached via DOMContentLoaded (not at parse time)
+        async function handleZipUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            // Validate file type
+            if(!file.name.endsWith('.zip') && !file.name.endsWith('.tar.gz')) {
+                alert('Please upload a .zip or .tar.gz file containing your project source code.');
+                e.target.value = '';
+                return;
+            }
+
+            const titleEl = document.getElementById('zipUploadTitle');
+            const wrapper = document.getElementById('zipUploadWrapper');
+            const modalEl = document.getElementById('newProjectModal');
+
+            titleEl.textContent = '⏳ Uploading... Please wait';
+            wrapper.style.pointerEvents = 'none';
+            wrapper.style.opacity = '0.5';
+
+            const projectId = "proj-" + Date.now();
+            const formData = new FormData();
+            formData.append('source', file);
+
+            try {
+                // 1. Upload source code
+                const uploadRes = await fetch('/api/v1/projects/upload?project_id=' + projectId, { method: 'POST', body: formData });
+                if(!uploadRes.ok) {
+                    const errText = await uploadRes.text();
+                    throw new Error('Upload failed: ' + errText);
+                }
+
+                titleEl.textContent = '⚙️ Triggering build...';
+
+                // 2. Trigger deployment
+                const res = await fetch('/api/v1/deployments/?project_id=' + projectId, { method: 'POST' });
+                if(!res.ok) {
+                    const errText = await res.text();
+                    throw new Error('Deploy trigger failed: ' + errText);
+                }
+                const data = await res.json();
+
+                titleEl.textContent = '✅ Deploying! Check Deployments tab.';
+                wrapper.style.pointerEvents = 'auto';
+                wrapper.style.opacity = '1';
+
+                setTimeout(() => { titleEl.textContent = 'Deploy source code (ZIP)'; }, 3000);
+
+                if(modalEl) modalEl.classList.remove('active');
+                fetchDeployments();
+                if(data.deployment_id) {
+                    viewDeployment(data.deployment_id, 'queued', null, new Date().toISOString(), false);
+                } else {
+                    switchMainView('dashboard');
+                }
+            } catch(err) {
+                console.error('Upload/deploy error:', err);
+                alert('❌ ' + err.message);
+                titleEl.textContent = 'Deploy source code (ZIP)';
+                wrapper.style.pointerEvents = 'auto';
+                wrapper.style.opacity = '1';
+                e.target.value = '';
+            }
+        }
+
+        async function provisionDatabase() {
+            const m = document.getElementById('newProjectModal');
+            if(m) m.classList.remove('active');
+            const projectName = "db-" + Math.floor(Math.random()*1000);
+            try {
+                await fetch(`/api/v1/databases/provision?project_id=${projectName}`, { method: 'POST' });
+                alert("Database provisioning started! Check Deployments view.");
+                fetchDeployments();
+            } catch(e) { alert("Failed: " + e.message); }
+        }
+
+        // === NEW SERVER ACTIONS ===
+        async function fetchEnvVars() {
+            try {
+                const res = await fetch('/api/v1/env');
+                const data = await res.json();
+                const tbody = document.getElementById('envTableBody');
+                let html = '';
+                data.forEach(env => {
+                    html += `<tr><td class="font-mono text-xs">${escapeHTML(env.key)}</td><td class="font-mono text-xs text-muted">********</td><td class="text-xs text-muted">Just now</td><td style="text-align: right;"><button class="btn-outline" style="padding:4px 10px; font-size:0.75rem;" onclick="deleteEnvVar('${escapeHTML(env.key)}')">Remove</button></td></tr>`;
+                });
+                tbody.innerHTML = html;
+            } catch(e) {}
+        }
+        async function addEnvVar() {
+            const k = document.getElementById('envKey').value;
+            const v = document.getElementById('envValue').value;
+            if(!k || !v) return;
+            await fetch('/api/v1/env', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({key: k, value: v}) });
+            document.getElementById('envKey').value = '';
+            document.getElementById('envValue').value = '';
+            fetchEnvVars();
+        }
+        async function deleteEnvVar(key) {
+            await fetch(`/api/v1/env?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+            fetchEnvVars();
+        }
+
+        async function addDomain() {
+            const domain = document.getElementById('domainInput').value;
+            if(!domain) return;
+            const btn = document.querySelector('button[onclick="addDomain()"]');
+            btn.textContent = 'Adding...';
+            await fetch('/api/v1/domains', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({domain}) });
+            
+            document.getElementById('domainInput').value = '';
+            btn.textContent = 'Add Domain';
+            
+            // Add to UI directly for immediate feedback
+            const tbody = document.getElementById('domainsTableBody');
+            tbody.insertAdjacentHTML('beforeend', `<tr>
+                <td class="font-mono text-xs">${escapeHTML(domain)}</td>
+                <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">Pending DNS</span></td>
+                <td class="text-xs text-muted">Just now</td>
+                <td style="text-align: right;"><button class="btn-outline" style="padding:4px 10px; font-size:0.75rem;" onclick="this.closest('tr').remove()">Remove</button></td>
+            </tr>`);
+        }
+
+        let currentDatabaseTarget = null;
+        function selectDatabase(dbName) {
+            currentDatabaseTarget = dbName;
+            document.querySelectorAll('#databasesList .project-card').forEach(el => el.classList.remove('active'));
+            const card = document.getElementById('db-card-' + dbName);
+            if(card) card.classList.add('active');
+            document.getElementById('dbQueryResults').textContent = `> Selected database: ${dbName}. Awaiting query...`;
+        }
+
+        async function executeDBQuery() {
+            const query = document.getElementById('dbQueryInput').value;
+            const resultsDiv = document.getElementById('dbQueryResults');
+            if(!query) return;
+            if(!currentDatabaseTarget) { resultsDiv.textContent = "> ERROR: No database selected. Please click on a provisioned database to select it."; return; }
+            resultsDiv.textContent = "> Executing query...";
+            try {
+                const res = await fetch('/api/v1/databases/query', { method: 'POST', body: JSON.stringify({query: query, database: currentDatabaseTarget}) });
+                const data = await res.json();
+                if(data.error) resultsDiv.textContent = `> ERROR:\n${data.error}\n\n${data.output || ''}`;
+                else resultsDiv.textContent = `> SUCCESS:\n${data.output || 'No output.'}`;
+            } catch(e) {
+                resultsDiv.textContent = `> FATAL ERROR: ${e.message}`;
+            }
+        }
+
+        async function fetchVolumes() { 
+            try { 
+                const [statsRes, volRes] = await Promise.all([
+                    fetch('/api/v1/volumes/stats'),
+                    fetch('/api/v1/volumes')
+                ]);
+                const d = await statsRes.json();
+                const vData = await volRes.json();
+                
+                document.getElementById('volSize').textContent = d.total_mb; 
+                document.getElementById('volUsageBar').style.width = d.used_pct + '%'; 
+                document.getElementById('volCount').textContent = d.file_count; 
+
+                const tbody = document.getElementById('volTableBody');
+                if (vData.files && vData.files.length > 0) {
+                    tbody.innerHTML = vData.files.map(f => {
+                        const sizeKB = (f.size / 1024).toFixed(2);
+                        return `<tr><td class="font-mono text-xs">${escapeHTML(f.key)}</td><td class="text-xs text-muted">${escapeHTML(f.project_id)}</td><td class="text-xs text-muted">${sizeKB} KB</td><td class="text-xs text-muted">${new Date(f.mod_time).toLocaleString()}</td></tr>`;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted text-sm">Bucket is empty</td></tr>`;
+                }
+            } catch(e) {} 
+        }
+
+        let healthPollTimer = null;
+        let isHealthPolling = false;
+        let uptimeBaseSeconds = 0;
+        let uptimeInterval = null;
+
+        function formatUptime(seconds) {
+            let h = Math.floor(seconds / 3600);
+            let m = Math.floor((seconds % 3600) / 60);
+            let s = Math.floor(seconds % 60);
+            let text = '';
+            if (h > 0) text += h + 'h ';
+            if (m > 0 || h > 0) text += m + 'm ';
+            text += s + 's';
+            return text;
+        }
+
+        async function fetchHealth() {
+            if (isHealthPolling) return;
+            isHealthPolling = true;
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            try {
+                const res = await fetch('/healthz', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                const data = await res.json();
+                
+                const navBadge = document.getElementById('navHealthBadge');
+                if(navBadge) navBadge.textContent = data.status === 'healthy' ? 'OK' : 'ERR';
+                
+                const obsStatus = document.getElementById('obsStatus');
+                if(obsStatus) {
+                    obsStatus.textContent = data.status === 'healthy' ? 'Healthy' : 'Error';
+                    obsStatus.style.color = data.status === 'healthy' ? 'var(--status-success)' : 'var(--status-error)';
+                }
+                const obsUptime = document.getElementById('obsUptime');
+                if(obsUptime) {
+                    if (uptimeInterval) clearInterval(uptimeInterval);
+                    
+                    let seconds = 0;
+                    const parts = data.uptime.split(' ');
+                    parts.forEach(p => {
+                        if (p.endsWith('h')) seconds += parseInt(p) * 3600;
+                        if (p.endsWith('m')) seconds += parseInt(p) * 60;
+                        if (p.endsWith('s')) seconds += parseInt(p);
+                    });
+                    uptimeBaseSeconds = seconds;
+                    obsUptime.textContent = formatUptime(uptimeBaseSeconds);
+                    
+                    uptimeInterval = setInterval(() => {
+                        uptimeBaseSeconds++;
+                        obsUptime.textContent = formatUptime(uptimeBaseSeconds);
+                    }, 1000);
+                }
+                
+                const obsDeps = document.getElementById('obsDeployments');
+                if(obsDeps) obsDeps.textContent = data.deployments;
+            } catch(e) {
+                clearTimeout(timeoutId);
+                const navBadge = document.getElementById('navHealthBadge');
+                if(navBadge) navBadge.textContent = 'ERR';
+            } finally {
+                isHealthPolling = false;
+                healthPollTimer = setTimeout(fetchHealth, 10000);
+            }
+        }
+
+        function stopHealthPoll() {
+            if (healthPollTimer) clearTimeout(healthPollTimer);
+            healthPollTimer = null;
+            isHealthPolling = false;
+        }
+
+        async function rollbackDeployment(id) {
+            if(!confirm('Are you sure you want to rollback to the previous container state?')) return;
+            try {
+                await fetch('/api/v1/deployments/rollback?deployment_id=' + id, {method: 'POST'});
+                alert('Rollback initiated! Container restarting...');
+            } catch(e) {
+                alert('Rollback failed: ' + e.message);
+            }
+        }
+
+        async function deleteDeployment(id) {
+            if(!confirm('Are you sure you want to completely delete this project? This will remove the container and all logs. This action cannot be undone.')) return;
+            try {
+                await fetch('/api/v1/deployments?id=' + id, {method: 'DELETE'});
+                switchMainView('dashboard');
+            } catch(e) {
+                alert('Delete failed: ' + e.message);
+            }
+        }
+
+        async function provisionDatabase() {
+            try {
+                const res = await fetch('/api/v1/databases/provision?project_id=pg_' + Math.floor(Math.random()*10000), {
+                    method: 'POST'
+                });
+                if (!res.ok) throw new Error('Network response was not ok');
+                
+                // Close modal
+                const modal = document.getElementById('newProjectModal');
+                if (modal) modal.classList.remove('active');
+                
+                // Switch view
+                switchMainView('dbstudio');
+            } catch(e) {
+                console.error('provisionDatabase error:', e);
+                alert('Error provisioning database: ' + e.message);
+            }
+        }
+
+        async function fetchDatabases() {
+            try {
+                const res = await fetch('/api/v1/databases');
+                const dbs = await res.json();
+                const list = document.getElementById('databasesList');
+                if (!list) return;
+                
+                if(!dbs || dbs.length === 0) {
+                    list.innerHTML = `<div class="p-6 text-center text-muted" style="padding: 2rem;">No databases provisioned yet.</div>`;
+                    currentDatabaseTarget = null;
+                    return;
+                }
+                
+                // Validate current selection still exists
+                const dbNames = dbs.map(db => db.name);
+                if (currentDatabaseTarget && !dbNames.includes(currentDatabaseTarget)) {
+                    currentDatabaseTarget = dbNames[0];
+                }
+                if (!currentDatabaseTarget) currentDatabaseTarget = dbNames[0];
+                
+                list.innerHTML = dbs.map(db => {
+                    const isActive = currentDatabaseTarget === db.name ? 'active' : '';
+                    const isUp = db.status && db.status.toLowerCase().includes('up');
+                    const statusColor = isUp ? 'var(--status-success)' : 'var(--status-warning)';
+                    const statusLabel = isUp ? 'Running' : (db.status || 'Unknown');
+                    return `<div class="project-card ${isActive}" id="db-card-${db.name}" onclick="selectDatabase('${db.name}')" style="cursor:pointer;">
+                        <div style="background:rgba(59,130,246,0.12);padding:10px;border-radius:8px;flex-shrink:0;">
+                            <svg style="width:22px;height:22px;stroke:var(--brand-blue);">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                            </svg>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:600;font-size:0.85rem;margin-bottom:3px;font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(db.name)}</div>
+                            <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;color:${statusColor};">
+                                <div style="width:6px;height:6px;border-radius:50%;background:${statusColor};box-shadow:0 0 6px ${statusColor};flex-shrink:0;"></div>
+                                <span>${escapeHTML(statusLabel)}</span>
+                            </div>
+                            ${db.ports ? `<div class="text-xs text-muted" style="margin-top:3px;font-family:var(--font-mono);font-size:0.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(db.ports)}</div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch(e) {
+                console.error('fetchDatabases error:', e);
+            }
+        }
+
+        // App initialization now happens after login
+    </script>
+</body>
+</html>

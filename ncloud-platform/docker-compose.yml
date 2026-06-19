@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ncloud
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ncloud
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  nats:
+    image: nats:2.9-alpine
+    command: ["-js"] # Enable JetStream
+    ports:
+      - "4222:4222" # Client port
+      - "8222:8222" # Management port
+
+volumes:
+  postgres_data:
